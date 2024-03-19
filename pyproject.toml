@@ -12,6 +12,8 @@ tgcrypto = "^1.2.5"
 sqlalchemy = "^2.0.28"
 python-dotenv = "^1.0.1"
 alembic = "^1.13.1"
+pydantic-settings = "^2.2.1"
+python-telegram-bot = "^21.0.1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -60,7 +60,10 @@ class User(Base):
     # state info
     state_info: Mapped[Optional[dict]] = mapped_column(JSON)
 
-    # fired
+    # bots?
+    is_bot: Mapped[bool_false]
+
+    # fired?
     is_fired: Mapped[bool_false]
     date_fired: Mapped[Optional[date]] = mapped_column(Date)
 
@@ -80,6 +83,10 @@ class Group(Base):
 
     # title
     title: Mapped[null_or_str]
+
+    # admin rights
+    is_admin: Mapped[bool_false]
+    admin_rights: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # RELATIONS
 

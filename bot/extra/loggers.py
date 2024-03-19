@@ -12,13 +12,17 @@ from logging import FileHandler, Formatter
 from pathlib import Path
 from typing import Optional
 
+from settings import bot_settings
+
 # current timestamp & app directory
 DATE_RUN = datetime.now()
 WORK_DIR = Path(os.getcwd())
 
 
 # get config
-LOG_SETTINGS = tomllib.load(Path(os.getenv("LOG_SETTINGS_FILE")).open("rb"))
+with bot_settings.log_settings_file.open("rb") as log_settings:
+    LOG_SETTINGS = tomllib.load(log_settings)
+
 
 # set basic config to logger
 logging.basicConfig(
