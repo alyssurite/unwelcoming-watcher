@@ -18,5 +18,8 @@ class Settings(BaseSettings):
     # log settings
     log_settings_file: Path = Field("./settings.toml")
 
+    # cache directory
+    cache_dir: Path = Field("./.cache")
+
 
 bot_settings = Settings()

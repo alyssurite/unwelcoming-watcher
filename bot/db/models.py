@@ -5,7 +5,8 @@ from typing import Annotated, List, Optional
 
 # sqlalchemy modules
 from sqlalchemy import JSON, BigInteger, Date, ForeignKey, String
-from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # get declarative base class
 from . import Base
@@ -44,12 +45,29 @@ class User(Base):
 
     # telegram id
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
-    # name
+
+    # telegram name
+    telegram_first_name: Mapped[str] = mapped_column(String)
+    telegram_last_name: Mapped[null_or_str] = mapped_column(String)
+
+    @hybrid_property
+    def telegram_full_name(self):
+        if self.telegram_last_name:
+            return self.telegram_first_name + " " + self.telegram_last_name
+        return self.telegram_first_name
+
+    # real name
     first_name: Mapped[null_or_str] = mapped_column(String)
     last_name: Mapped[null_or_str] = mapped_column(String)
+    middle_name: Mapped[null_or_str] = mapped_column(String)
 
-    # combined
-    full_name: Mapped[null_or_str] = column_property(first_name + " " + last_name)
+    @hybrid_property
+    def full_name(self):
+        if not self.first_name:
+            return
+        if not self.last_name:
+            return self.first_name
+        return self.first_name + " " + self.last_name
 
     # username
     username: Mapped[null_or_str]
@@ -60,7 +78,7 @@ class User(Base):
     # state info
     state_info: Mapped[Optional[dict]] = mapped_column(JSON)
 
-    # bots?
+    # bot?
     is_bot: Mapped[bool_false]
 
     # fired?
@@ -84,9 +102,27 @@ class Group(Base):
     # title
     title: Mapped[null_or_str]
 
-    # admin rights
+    # admin?
     is_admin: Mapped[bool_false]
-    admin_rights: Mapped[Optional[dict]] = mapped_column(JSON)
+
+    # admin privileges
+    can_change_info: Mapped[bool_false]
+    can_delete_messages: Mapped[bool_false]
+    can_edit_messages: Mapped[bool_false]
+    can_invite_users: Mapped[bool_false]
+    can_manage_chat: Mapped[bool_false]
+    can_manage_video_chats: Mapped[bool_false]
+    can_pin_messages: Mapped[bool_false]
+    can_post_messages: Mapped[bool_false]
+    can_promote_members: Mapped[bool_false]
+    can_restrict_members: Mapped[bool_false]
+    is_anonymous: Mapped[bool_false]
+
+    # group public link
+    public_link: Mapped[null_or_str]
+
+    # invite link
+    invite_link: Mapped[null_or_str]
 
     # RELATIONS
 
