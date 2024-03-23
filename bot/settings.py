@@ -1,4 +1,4 @@
-"""Settings module"""
+"""Bot settings"""
 
 from pathlib import Path
 
@@ -20,6 +20,9 @@ class Settings(BaseSettings):
 
     # cache directory
     cache_dir: Path = Field("./.cache")
+
+    # bot persistence
+    persist_file: Path = Field("./.bot_data")
 
 
 bot_settings = Settings()

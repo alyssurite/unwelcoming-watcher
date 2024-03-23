@@ -2,7 +2,10 @@
 
 from enum import Enum, auto
 
+# pyrogram
 from pyrogram.enums import ChatMemberStatus
+
+# python-telegram-bot
 from telegram import ChatAdministratorRights
 
 

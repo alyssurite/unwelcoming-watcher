@@ -2,6 +2,7 @@
 
 import logging
 
+from datetime import datetime
 from typing import Optional
 
 from bot.db.getters import get_group, get_group_user, get_user
@@ -31,3 +32,11 @@ async def insert_or_update_group_user(
     if await get_group_user(group, user):
         return await update_group_user(group, user, **kwargs)
     return await insert_group_user(group, user, **kwargs)
+
+
+async def fire_user(user_id: int) -> Optional[User]:
+    return await update_user(
+        user_id,
+        is_fired=True,
+        date_fired=datetime.now().date(),
+    )

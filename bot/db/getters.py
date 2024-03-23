@@ -38,7 +38,7 @@ async def check_admin_right(
 
 async def convert_group(group: int | Group) -> Optional[Group]:
     if isinstance(group, int) and not (group := await get_group(group)):
-        log.warning("Group User: No group supplied.")
+        log.warning("Convert Group: No group supplied.")
     return group
 
 
@@ -49,8 +49,24 @@ async def get_user(user_id: int) -> Optional[User]:
 
 async def convert_user(user: int | User) -> Optional[User]:
     if isinstance(user, int) and not (user := await get_user(user)):
-        log.warning("Group User: No user supplied.")
+        log.warning("Convert User: No user supplied.")
     return user
+
+
+async def check_if_superuser(user_id: int) -> bool:
+    if user := await get_user(user_id):
+        return user.is_superuser
+    return False
+
+
+async def get_user_groups(user_id: int) -> list[Group]:
+    with Session() as session:
+        return session.scalars(
+            select(Group)
+            .join(UserGroupAssociation)
+            .join(User)
+            .where(UserGroupAssociation.user_id == user_id)
+        ).all()
 
 
 async def get_group_user(

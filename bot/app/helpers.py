@@ -1,4 +1,4 @@
-"""Helpers module"""
+"""App helpers"""
 
 import logging
 
@@ -6,13 +6,25 @@ import logging
 from telegram import Update
 from telegram.error import Forbidden
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
-from bot.consts import GroupStatus
+# pyrogram client
 from bot.app.pyroclient import recheck_rights, update_group_info
+
+# app senders
 from bot.app.senders import send_error
+
+# bot constants
+from bot.consts import GroupStatus
+
+# database getters
 from bot.db.getters import check_group
 
 log = logging.getLogger(__name__)
+
+
+def escape_id(some_id: int | str):
+    return escape_markdown(str(some_id), 2)
 
 
 def notify(update: Update, *, command: str = None, function: str = None):
@@ -52,7 +64,11 @@ async def add_or_leave_group(
     shared: bool = False,
 ):
     notify(update, function="add_or_leave_group")
-    chat_id = update.effective_chat.id
+    chat_id = (
+        update.effective_message.chat_shared.chat_id
+        if shared
+        else update.effective_chat.id
+    )
     is_admin, admin_rights = await recheck_rights(chat_id)
     # notify and leave if bot is not an admin
     if not is_admin:

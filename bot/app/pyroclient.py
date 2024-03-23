@@ -4,18 +4,26 @@ import logging
 
 from datetime import datetime
 
+# pyrogram
 from pyrogram import Client
 from pyrogram.enums import ChatMemberStatus
-from pyrogram.errors import ChannelInvalid, PeerIdInvalid
+from pyrogram.errors import ChannelInvalid, PeerIdInvalid, UsernameNotOccupied
 from pyrogram.types import ChatMember
 
+# bot constants
 from bot.consts import MEMBER_ABSENT, MEMBER_ADMIN, PRIVILEGES
+
+# database helpers
 from bot.db.helpers import (
     insert_or_update_group,
     insert_or_update_group_user,
     insert_or_update_user,
 )
+
+# database updaters
 from bot.db.updaters import update_group_admin_rights
+
+# bot settings
 from bot.settings import bot_settings
 
 log = logging.getLogger(__name__)
@@ -26,6 +34,14 @@ pyro_app = Client(
     api_hash=bot_settings.api_hash,
     bot_token=bot_settings.bot_token,
 )
+
+
+async def get_chat_by_username(username: str):
+    try:
+        chat = await pyro_app.get_chat(username)
+    except UsernameNotOccupied:
+        return
+    return chat.id
 
 
 def extract_rights(member: ChatMember):
@@ -97,6 +113,8 @@ async def update_member_info(group_id: int, member: ChatMember):
         is_absent=check_if_member_absent(member),
         date_absent=get_absent_date(member),
     )
+    # for future use?
+    # await save_photo(member.user.photo.big_file_id)
     return user
 
 
@@ -121,7 +139,7 @@ async def update_group_info(
     group_id: int,
     is_admin: bool = False,
     admin_rights: dict = None,
-) -> None:
+):
     # add or update group
     tg_group = await pyro_app.get_chat(group_id)
     group = await insert_or_update_group(
@@ -142,5 +160,4 @@ async def update_group_info(
             group.id,
             group.title,
         )
-        # for future use?
-        # await save_photo(member.user.photo.big_file_id)
+    return group

@@ -1,4 +1,4 @@
-"""Loggers module"""
+"""Bot loggers"""
 
 import logging
 import os

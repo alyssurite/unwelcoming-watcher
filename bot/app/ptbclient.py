@@ -1,15 +1,17 @@
 """Python-Telegram-Bot client"""
 
-# python-telegram-bot
 import logging
 
+# python-telegram-bot
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     ApplicationBuilder,
+    CallbackQueryHandler,
     CommandHandler,
     Defaults,
     MessageHandler,
+    PicklePersistence,
     filters,
 )
 
@@ -18,6 +20,7 @@ from bot.app.commands import command_group, command_help, command_kick, command_
 
 # bot handlers
 from bot.app.handlers import (
+    handle_callback_query,
     handle_chat_shared,
     handle_left_chat_member,
     handle_new_chat_members,
@@ -36,6 +39,11 @@ def build_application() -> Application:
     application = (
         ApplicationBuilder()
         .token(bot_settings.bot_token)
+        .persistence(
+            persistence=PicklePersistence(
+                filepath=bot_settings.persist_file,
+            )
+        )
         .defaults(
             Defaults(
                 parse_mode=ParseMode.MARKDOWN_V2,
@@ -102,6 +110,13 @@ def build_application() -> Application:
         MessageHandler(
             filters.ChatType.GROUPS & filters.StatusUpdate.LEFT_CHAT_MEMBER,
             handle_left_chat_member,
+        ),
+    )
+
+    # handle callback queries
+    application.add_handler(
+        CallbackQueryHandler(
+            handle_callback_query,
         ),
     )
 

@@ -1,5 +1,9 @@
+"""App events"""
+
+# python-telegram-bot
 from telegram.ext import Application
 
+# pyrogram client
 from bot.app.pyroclient import pyro_app
 
 
