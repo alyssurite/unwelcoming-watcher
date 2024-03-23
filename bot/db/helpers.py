@@ -40,3 +40,7 @@ async def fire_user(user_id: int) -> Optional[User]:
         is_fired=True,
         date_fired=datetime.now().date(),
     )
+
+
+async def grant_user_superuser(user_id: int) -> Optional[User]:
+    return await update_user(user_id, is_superuser=True)

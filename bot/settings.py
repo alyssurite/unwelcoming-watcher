@@ -24,5 +24,8 @@ class Settings(BaseSettings):
     # bot persistence
     persist_file: Path = Field("./.bot_data")
 
+    # su token
+    su_token: str = Field(min_length=30)
+
 
 bot_settings = Settings()

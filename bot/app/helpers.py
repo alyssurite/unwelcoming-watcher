@@ -2,6 +2,8 @@
 
 import logging
 
+from typing import Any
+
 # python-telegram-bot
 from telegram import Update
 from telegram.error import Forbidden
@@ -23,8 +25,12 @@ from bot.db.getters import check_group
 log = logging.getLogger(__name__)
 
 
+def escape_any(text: Any):
+    return escape_markdown(str(text), 2)
+
+
 def escape_id(some_id: int | str):
-    return escape_markdown(str(some_id), 2)
+    return escape_any(some_id)
 
 
 def notify(update: Update, *, command: str = None, function: str = None):

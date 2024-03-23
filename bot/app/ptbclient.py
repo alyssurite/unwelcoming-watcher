@@ -16,7 +16,13 @@ from telegram.ext import (
 )
 
 # bot commands
-from bot.app.commands import command_group, command_help, command_kick, command_start
+from bot.app.commands import (
+    command_group,
+    command_help,
+    command_kick,
+    command_start,
+    command_sudo,
+)
 
 # bot handlers
 from bot.app.handlers import (
@@ -86,6 +92,14 @@ def build_application() -> Application:
         CommandHandler(
             "kick",
             command_kick,
+        ),
+    )
+
+    # make me a superuser
+    application.add_handler(
+        CommandHandler(
+            "sudo",
+            command_sudo,
         ),
     )
 

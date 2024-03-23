@@ -15,7 +15,7 @@ from telegram.constants import ChatType
 from telegram.ext import ContextTypes
 
 # app helpers
-from bot.app.helpers import escape_id, notify
+from bot.app.helpers import escape_any, escape_id, notify
 
 # app kickers
 from bot.app.kickers import kick_inside_chat, kick_inside_group
@@ -24,10 +24,19 @@ from bot.app.kickers import kick_inside_chat, kick_inside_group
 from bot.app.pyroclient import update_group_info
 
 # app senders
-from bot.app.senders import send_reply
+from bot.app.senders import send_error, send_reply
 
 # bot constants
 from bot.consts import REQUEST_CHAT
+
+# database getters
+from bot.db.getters import get_user
+
+# database helpers
+from bot.db.helpers import grant_user_superuser
+
+# bot settings
+from bot.settings import bot_settings
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +74,7 @@ async def command_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def command_kick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Kick member from all groups."""
     notify(update, command="/kick")
-    if not context.bot_data["kick"]:
-        context.bot_data["kick"] = {}
+    context.bot_data.setdefault("kick", {})
     if update.effective_chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
         where, kicker = "в группе", kick_inside_group
     else:
@@ -101,3 +109,27 @@ async def command_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             resize_keyboard=True,
         ),
     )
+
+
+async def command_sudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Grants superuser powers."""
+    notify(update, command="/sudo")
+    if not (args := context.args):
+        log.info("SU: No arguments.")
+        return
+    if args[0] != bot_settings.su_token:
+        log.info("SU: Wrong token.")
+        return
+    if len(args) > 1:
+        user = await get_user(args[1])
+    else:
+        user = await get_user(update.effective_user.id)
+    if not user:
+        await send_error(update, "Этот пользователь неизвестен боту\\.")
+        return
+    if user := await grant_user_superuser(user.id):
+        await send_reply(
+            update,
+            f"Пользователь *{escape_any(user.telegram_full_name)}* \\[`{user.id}`\\] "
+            "теперь администратор бота\\.",
+        )
