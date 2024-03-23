@@ -12,7 +12,8 @@ from logging import FileHandler, Formatter
 from pathlib import Path
 from typing import Optional
 
-from settings import bot_settings
+# bot settings
+from bot.settings import bot_settings
 
 # current timestamp & app directory
 DATE_RUN = datetime.now()
