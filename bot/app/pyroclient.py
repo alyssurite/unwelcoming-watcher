@@ -41,7 +41,7 @@ async def get_chat_by_username(username: str):
         chat = await pyro_app.get_chat(username)
     except UsernameNotOccupied:
         return
-    return chat.id
+    return chat
 
 
 def extract_rights(member: ChatMember):

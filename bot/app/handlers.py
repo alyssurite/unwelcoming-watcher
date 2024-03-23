@@ -73,7 +73,7 @@ async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def generate_report(success: set, failure: set):
-    ...
+    return "Успех\\."
 
 
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -90,7 +90,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     )
     if not await check_if_superuser(update.effective_user.id):
         log.info(
-            "Callback Query: A user [%d] is not a superuser.", update.effective_user.id
+            "Callback Query: A user [%d] is not a superuser.",
+            update.effective_user.id,
         )
         return
     answer, chat = query.data.split(":")
@@ -98,13 +99,16 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     if answer != "y":
         log.info("Callback Query: Answer is not positive.")
         log.info("Callback Query: Deleting key...")
-        del context.chat_data["kick"][target_chat]
+        del context.bot_data["kick"][target_chat]
         log.info("Callback Query: Deleted key.")
-    for user in context.chat_data["kick"][target_chat]:
-        user["kick"] = True
+        await edit_message(update, "Действие отменено\\.")
+        return
+    target = context.bot_data["kick"][target_chat]
+    for user in target:
+        target[user]["kick"] = True
     success, failure = await kick_users(update, context, target_chat)
     if not (success or failure):
         log.info("Callback Query: No one was kicked.")
         await edit_message(update, "Никто не был исключён\\.")
         return
-    await edit_message(update, generate_report(success, failure))
+    await edit_message(update, await generate_report(success, failure))

@@ -9,7 +9,6 @@ from telegram.constants import MessageEntityType
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
-# pyrogram client
 from bot.app.pyroclient import get_chat_by_username
 
 # app senders
@@ -21,15 +20,18 @@ from bot.db.getters import get_user, get_user_groups
 # database helpers
 from bot.db.helpers import fire_user
 
+# pyrogram client
+from .helpers import escape_any, escape_id
+
 log = logging.getLogger(__name__)
 
 
-def add_user_to_kick_dict(
+async def add_user_to_kick_dict(
     group_id: int, user_id: int, context: ContextTypes.DEFAULT_TYPE
 ):
-    if not (group := context.chat_data["kick"].get(group_id)):
-        group = context.chat_data["kick"][group_id] = []
-    group.append({"id": user_id, "kick": False})
+    if not (group := context.bot_data["kick"].get(group_id)):
+        group = context.bot_data["kick"][group_id] = {}
+    group[user_id] = {"kick": False}
 
 
 async def kick_users(
@@ -38,37 +40,48 @@ async def kick_users(
     target_chat: int,
 ) -> tuple[set[int], set[int]]:
     success, failure = set(), set()
-    for kick_user in context.chat_data["kick"][target_chat]:
-        if not kick_user["kick"]:
-            log.info("Kick User: User [%d] is not marked for kicking.", kick_user["id"])
+    target = context.bot_data["kick"][target_chat]
+    for target_user, target_info in target.items():
+        if not target_info["kick"]:
+            log.info("Kick User: User [%d] is not marked for kicking.", target_user)
             continue
-        if not (user := await get_user(kick_user["id"])):
-            log.info("Kick User: User [%d] does not exist.", kick_user["id"])
+        if not (user := await get_user(target_user)):
+            log.info("Kick User: User [%d] does not exist.", target_user)
         for group in await get_user_groups(user.id):
             try:
-                await context.bot.ban_chat_member(group.id, user["id"])
+                await context.bot.ban_chat_member(group.id, user.id)
                 log.info(
-                    "Kick Users: Successfully kicked [%d] from [%d].",
-                    user["id"],
+                    "Kick Users: Successfully kicked user [%d] from [%d].",
+                    user.id,
                     group.id,
                 )
-                # probably no need to update database for user here?
-                # since bot generates left_chat_member messages
-                success.add(user["id"])
+                success.add(user.id)
             except BadRequest as e:
-                failure.add(f"{group.id}:{user['id']}")
+                log.error("Kick Users: Error: %s.", e.message)
+                failure.add(f"{group.id}:{user.id}")
                 log.info(
-                    "Kick Users: Couldn't kick [%d] from [%d].", user["id"], group.id
+                    "Kick Users: Failed to kick user [%d] from [%d].",
+                    user.id,
+                    group.id,
                 )
-                log.error("Error: %s.", e.message)
+                context.bot.send_message(
+                    update.effective_user.id,
+                    "Не удалось удалить пользователя из чата "
+                    f"{escape_any(group.title)!r} "
+                    f"\\[{escape_id(group.id)}\\]\\.",
+                )
         else:
-            if await fire_user(user["id"]):
-                log.info("Kick Users: Fired user [%d].", user["id"])
+            if await fire_user(user.id):
+                log.info("Kick Users: Fired user [%d].", user.id)
+    # delete chat key
+    context.bot_data["kick"].pop(target_chat)
     return success, failure
 
 
 async def process_entities(
-    message: Message, group: Chat, context: ContextTypes.DEFAULT_TYPE
+    context: ContextTypes.DEFAULT_TYPE,
+    message: Message,
+    group: Chat,
 ):
     for entity in message.entities:
         # there's @username
@@ -84,12 +97,11 @@ async def process_entities(
 async def kick_inside_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.effective_message
     group = update.effective_chat
-    await process_entities(message, group, context)
-    if context.chat_data["kick"]:
-        await send_confirmation(update, group)
-        return
     if (origin := message.reply_to_message) and (user := origin.from_user):
-        group.append({"id": user.id, "kick": False})
+        await add_user_to_kick_dict(group.id, user.id, context)
+    else:
+        await process_entities(context, message, group)
+    if context.bot_data["kick"]:
         await send_confirmation(update, group)
         return
     await send_error(update, "Не найден ни один пользователь к исключению\\.")
