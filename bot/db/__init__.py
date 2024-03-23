@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 DB_URI = os.getenv("DB_URI")
 
 # engine maintaining connection
-engine = create_engine(DB_URI)
+engine = create_engine(DB_URI, echo=True)
 
 
 # base class for declarative class definitions
@@ -18,4 +18,4 @@ class Base(DeclarativeBase):
 
 
 # get a sessionmaker
-Session = sessionmaker(bind=engine)
+Session = sessionmaker(bind=engine, expire_on_commit=False)
