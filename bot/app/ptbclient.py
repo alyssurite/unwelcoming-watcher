@@ -69,27 +69,37 @@ def build_application() -> Application:
         .build()
     )
 
-    # start the bot command
+    # add to group as admin
     application.add_handler(
-        CommandHandler(
-            "start",
-            command_start,
-        ),
-    )
-
-    # ask for help command
-    application.add_handler(
-        CommandHandler(
-            "help",
-            command_help,
-        ),
-    )
-
-    # add to group as admin command
-    application.add_handler(
-        CommandHandler(
-            "group",
-            command_group,
+        ConversationHandler(
+            entry_points=[
+                CommandHandler(
+                    "group",
+                    command_group,
+                ),
+                CommandHandler(
+                    "start",
+                    command_start,
+                    has_args=True,
+                ),
+            ],
+            states={
+                "X": [
+                    MessageHandler(
+                        filters.StatusUpdate.CHAT_SHARED,
+                        handle_chat_shared,
+                    ),
+                ],
+            },
+            fallbacks=[
+                CommandHandler(
+                    "cancel",
+                    command_cancel,
+                ),
+            ],
+            per_chat=True,
+            persistent=True,
+            name="group_handler",
         ),
     )
 
@@ -126,20 +136,28 @@ def build_application() -> Application:
         ),
     )
 
+    # start the bot command
+    application.add_handler(
+        CommandHandler(
+            "start",
+            command_start,
+        ),
+    )
+
+    # ask for help command
+    application.add_handler(
+        CommandHandler(
+            "help",
+            command_help,
+        ),
+    )
+
     # make me a superuser
     application.add_handler(
         CommandHandler(
             "sudo",
             command_sudo,
         ),
-    )
-
-    # remove keyboard when chat is shared
-    application.add_handler(
-        MessageHandler(
-            filters.StatusUpdate.CHAT_SHARED,
-            handle_chat_shared,
-        )
     )
 
     # catch new members

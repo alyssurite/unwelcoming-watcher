@@ -91,7 +91,7 @@ def get_absent_date(member: ChatMember):
     return None
 
 
-async def update_member_info(group_id: int, member: ChatMember):
+async def update_member(group_id: int, member: ChatMember):
     tg_user = member.user
     user = await insert_or_update_user(
         tg_user.id,
@@ -118,7 +118,7 @@ async def update_member_info(group_id: int, member: ChatMember):
     return user
 
 
-async def update_user_info(group_id: int, user_id: int):
+async def update_member_info(group_id: int, user_id: int):
     try:
         member = await pyro_app.get_chat_member(group_id, user_id)
     except PeerIdInvalid:
@@ -132,7 +132,17 @@ async def update_user_info(group_id: int, user_id: int):
             date_absent=datetime.now().date(),
         )
         return
-    await update_member_info(group_id, member)
+    await update_member(group_id, member)
+
+
+async def update_user_info(user_id: int):
+    tg_user = await pyro_app.get_chat(user_id)
+    return await insert_or_update_user(
+        tg_user.id,
+        telegram_first_name=tg_user.first_name,
+        telegram_last_name=tg_user.last_name,
+        username=tg_user.username,
+    )
 
 
 async def update_group_info(
@@ -151,7 +161,7 @@ async def update_group_info(
         invite_link=tg_group.invite_link,
     )
     async for member in pyro_app.get_chat_members(group_id):
-        user = await update_member_info(group_id, member)
+        user = await update_member(group_id, member)
         log.info(
             "Update Chat Info: [%d] %r @%s < [%d] %r.",
             user.id,

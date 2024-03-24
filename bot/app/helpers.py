@@ -49,6 +49,12 @@ async def add_user_to_kick_dict(
     chat_id: int,
     user_id: int,
 ):
+    if user_id == context.bot.id:
+        await context.bot.send_message(
+            chat_id,
+            "Бот не может забанить себя\\! \\(Ну реально\\.\\)",
+        )
+        return
     is_fired, date_fired = await check_if_fired(user_id)
     if is_fired:
         user = await get_user(user_id)

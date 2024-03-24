@@ -59,7 +59,7 @@ async def kick_users(
                     user.id,
                     group.id,
                 )
-                context.bot.send_message(
+                await context.bot.send_message(
                     update.effective_user.id,
                     "Не удалось удалить пользователя из чата "
                     f"{escape_any(group.title)!r} "

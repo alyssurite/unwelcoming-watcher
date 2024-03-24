@@ -20,7 +20,7 @@ from bot.app.helpers import add_or_leave_group, add_user_to_kick_dict, notify
 from bot.app.kickers import kick_users
 
 # pyrogram client
-from bot.app.pyroclient import update_group_info, update_user_info
+from bot.app.pyroclient import update_group_info, update_member_info
 
 # app senders
 from bot.app.senders import send_confirmation, send_reply, send_to_superusers
@@ -75,7 +75,7 @@ async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_
                 "Но теперь он [*добавлен снова*]"
                 f"({update.effective_message.link})\\.",
             )
-        await update_user_info(update.effective_chat.id, user.id)
+        await update_member_info(update.effective_chat.id, user.id)
 
 
 async def handle_left_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,7 +84,7 @@ async def handle_left_chat_member(update: Update, context: ContextTypes.DEFAULT_
     status, *_ = await add_or_leave_group(update, context)
     if status < GroupStatus.RIGHTFUL_ADMIN:
         return
-    await update_user_info(update.effective_chat.id, user.id)
+    await update_member_info(update.effective_chat.id, user.id)
 
 
 async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,7 +94,7 @@ async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE)
         update, context, shared=True
     )
     if status < GroupStatus.RIGHTFUL_ADMIN:
-        return
+        return ConversationHandler.END
     # everything is successful
     await send_reply(
         update,
@@ -110,12 +110,13 @@ async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE)
         update,
         "Информация о чате успешно обновлена\\.",
     )
+    return ConversationHandler.END
 
 
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notify(update, function="handle_callback_query")
     query = update.callback_query
-    await query.answer(query.data, show_alert=True)
+    await query.answer()
     log.info(
         "Callback Query: %r [%d] : [%d] | QUERY from %r [%d]: %r.",
         update.effective_chat.effective_name,
