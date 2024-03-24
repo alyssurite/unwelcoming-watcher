@@ -31,6 +31,7 @@ from bot.app.handlers import (
     handle_callback_query,
     handle_chat_shared,
     handle_forwarded_message,
+    handle_group_message,
     handle_left_chat_member,
     handle_new_chat_members,
     handle_other_messages,
@@ -169,6 +170,14 @@ def build_application() -> Application:
         MessageHandler(
             filters.ChatType.GROUPS & filters.StatusUpdate.ALL,
             handle_status_update,
+        ),
+    )
+
+    # catch anything from groups
+    application.add_handler(
+        MessageHandler(
+            filters.ChatType.GROUPS,
+            handle_group_message,
         ),
     )
 

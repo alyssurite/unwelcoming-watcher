@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 DB_URI = os.getenv("DB_URI")
 
 # engine maintaining connection
-engine = create_engine(DB_URI, echo=True)
+engine = create_engine(DB_URI)
 
 
 # base class for declarative class definitions

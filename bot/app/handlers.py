@@ -29,7 +29,7 @@ from bot.app.senders import send_confirmation, send_reply, send_to_superusers
 from bot.consts import GroupStatus
 
 # database getters
-from bot.db.getters import check_if_fired, check_if_superuser
+from bot.db.getters import check_if_fired, check_if_superuser, get_group
 
 # database helpers
 from bot.db.helpers import insert_or_update_user
@@ -37,43 +37,54 @@ from bot.db.helpers import insert_or_update_user
 log = logging.getLogger(__name__)
 
 
+async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # notify(update, function="handle_group_message")
+    group_id = update.effective_chat.id
+    if await get_group(group_id):
+        return
+    status, *admin_rights = await add_or_leave_group(update, context)
+    if status < GroupStatus.RIGHTFUL_ADMIN:
+        return
+    await update_group_info(group_id, *admin_rights)
+
+
 async def handle_status_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notify(update, function="handle_status_update")
-    chat_id = update.effective_chat.id
+    group_id = update.effective_chat.id
     _, *admin_rights = await add_or_leave_group(update, context)
-    await update_group_info(chat_id, *admin_rights)
+    await update_group_info(group_id, *admin_rights)
 
 
 async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notify(update, function="handle_new_chat_members")
     users = update.message.new_chat_members
     status, *_ = await add_or_leave_group(update, context)
-    if status >= GroupStatus.RIGHTFUL_ADMIN:
-        for user in users:
-            is_fired, date_fired = await check_if_fired(user.id)
-            if is_fired:
-                user = await insert_or_update_user(
-                    user.id, is_fired=False, date_fired=None
-                )
-                await send_to_superusers(
-                    context,
-                    f"Пользователь {escape_any(user.telegram_full_name)} "
-                    f"\\[`{user.id}`\\] был удалён отовсюду "
-                    f"{date_fired.day:02}\\."
-                    f"{date_fired.month:02}\\."
-                    f"{date_fired.year}\\.\n\n"
-                    "Но теперь он [*добавлен снова*]"
-                    f"({update.effective_message.link})\\.",
-                )
-            await update_user_info(update.effective_chat.id, user.id)
+    if status < GroupStatus.RIGHTFUL_ADMIN:
+        return
+    for user in users:
+        is_fired, date_fired = await check_if_fired(user.id)
+        if is_fired:
+            user = await insert_or_update_user(user.id, is_fired=False, date_fired=None)
+            await send_to_superusers(
+                context,
+                f"Пользователь {escape_any(user.telegram_full_name)} "
+                f"\\[`{user.id}`\\] был удалён отовсюду "
+                f"{date_fired.day:02}\\."
+                f"{date_fired.month:02}\\."
+                f"{date_fired.year}\\.\n\n"
+                "Но теперь он [*добавлен снова*]"
+                f"({update.effective_message.link})\\.",
+            )
+        await update_user_info(update.effective_chat.id, user.id)
 
 
 async def handle_left_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notify(update, function="handle_left_chat_member")
     user = update.message.left_chat_member
     status, *_ = await add_or_leave_group(update, context)
-    if status >= GroupStatus.RIGHTFUL_ADMIN:
-        await update_user_info(update.effective_chat.id, user.id)
+    if status < GroupStatus.RIGHTFUL_ADMIN:
+        return
+    await update_user_info(update.effective_chat.id, user.id)
 
 
 async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -21,5 +21,5 @@ alembic upgrade head
 Then start the bot:
 
 ```shell
-poetry run python bot
+poetry run python main.py
 ```
