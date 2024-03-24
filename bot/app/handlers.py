@@ -10,10 +10,13 @@ from telegram.ext import ContextTypes, ConversationHandler
 # app editors
 from bot.app.editors import edit_message
 
+# app formatters
+from bot.app.formatters import generate_report
+
 # app helpers
 from bot.app.helpers import add_or_leave_group, add_user_to_kick_dict, notify
 
-# bot kickers
+# app kickers
 from bot.app.kickers import kick_users
 
 # pyrogram client
@@ -73,10 +76,6 @@ async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
 
-async def generate_report(success: set, failure: set):
-    return "Успех\\."
-
-
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer(query.data, show_alert=True)
@@ -130,7 +129,7 @@ async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT
         return "W"
     await add_user_to_kick_dict(context, chat.id, forwarded.sender_user.id)
     if context.bot_data["kick"].get(chat.id):
-        await send_confirmation(update, chat)
+        await send_confirmation(update, context, chat.id)
     return ConversationHandler.END
 
 

@@ -14,8 +14,11 @@ from telegram import (
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, ConversationHandler
 
+# app formatters
+from bot.app.formatters import escape_any, escape_id
+
 # app helpers
-from bot.app.helpers import escape_any, escape_id, notify
+from bot.app.helpers import notify
 
 # app kickers
 from bot.app.kickers import kick_inside_chat, kick_inside_group

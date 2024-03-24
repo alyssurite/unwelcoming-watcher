@@ -69,6 +69,11 @@ async def get_user_groups(user_id: int) -> list[Group]:
         ).all()
 
 
+async def get_users(user_ids: list[int]) -> list[User]:
+    with Session() as session:
+        return session.scalars(select(User).where(User.id.in_(user_ids))).all()
+
+
 async def get_group_user(
     group: int | Group,
     user: int | User,

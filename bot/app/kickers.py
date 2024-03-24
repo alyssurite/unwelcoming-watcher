@@ -1,6 +1,5 @@
 """App kickers"""
 
-
 import logging
 
 # python-telegram-bot
@@ -9,8 +8,11 @@ from telegram.constants import MessageEntityType
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes, ConversationHandler
 
+# app formatters
+from bot.app.formatters import escape_any, escape_id
+
 # app helpers
-from bot.app.helpers import add_user_to_kick_dict, escape_any, escape_id
+from bot.app.helpers import add_user_to_kick_dict
 
 # pyrogram client
 from bot.app.pyroclient import get_chat_by_username
@@ -95,7 +97,7 @@ async def kick_inside_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await process_entities(context, message, group)
     if context.bot_data["kick"].get(group.id):
-        await send_confirmation(update, group)
+        await send_confirmation(update, context, group.id)
         return ConversationHandler.END
     await send_error(update, "Не найден ни один пользователь к исключению\\.")
     return ConversationHandler.END
@@ -106,7 +108,7 @@ async def kick_inside_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     await process_entities(context, message, chat)
     if context.bot_data["kick"].get(chat.id):
-        await send_confirmation(update, chat)
+        await send_confirmation(update, context, chat.id)
         return ConversationHandler.END
     await send_reply(
         update,

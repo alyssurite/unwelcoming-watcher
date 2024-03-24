@@ -2,13 +2,10 @@
 
 import logging
 
-from typing import Any
-
 # python-telegram-bot
 from telegram import Update
 from telegram.error import Forbidden
 from telegram.ext import ContextTypes
-from telegram.helpers import escape_markdown
 
 # pyrogram client
 from bot.app.pyroclient import recheck_rights, update_group_info
@@ -23,14 +20,6 @@ from bot.consts import GroupStatus
 from bot.db.getters import check_group
 
 log = logging.getLogger(__name__)
-
-
-def escape_any(text: Any):
-    return escape_markdown(str(text), 2)
-
-
-def escape_id(some_id: int | str):
-    return escape_any(some_id)
 
 
 def notify(update: Update, *, command: str = None, function: str = None):
