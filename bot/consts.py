@@ -31,6 +31,10 @@ class GroupStatus(Enum):
         return self.value >= other.value
 
 
+# timeout in seconds
+CONVERSATION_TIMEOUT = 60
+
+
 PRIVILEGES = (
     "can_change_info",
     "can_delete_messages",

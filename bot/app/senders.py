@@ -16,11 +16,13 @@ log = logging.getLogger(__name__)
 
 
 async def send_reply(update: Update, text: str, **kwargs) -> Message:
-    await update.effective_message.reply_text(text, **kwargs)
+    return await update.effective_message.reply_text(text, **kwargs)
 
 
 async def send_error(update: Update, text: str, **kwargs) -> Message:
-    await update.effective_message.reply_text(f"\\[ ❌ *ОШИБКА* \\] {text}", **kwargs)
+    return await update.effective_message.reply_text(
+        f"\\[ ❌ *ОШИБКА* \\] {text}", **kwargs
+    )
 
 
 async def send_confirmation(
@@ -29,7 +31,7 @@ async def send_confirmation(
     chat_id: int,
     **kwargs,
 ) -> Message:
-    await send_reply(
+    return await send_reply(
         update,
         await generate_confirmation_text(context, chat_id),
         reply_markup=InlineKeyboardMarkup(

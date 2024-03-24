@@ -36,10 +36,14 @@ from bot.app.handlers import (
     handle_new_chat_members,
     handle_other_messages,
     handle_status_update,
+    handle_timeout,
 )
 
 # bot events
 from bot.app.on_events import on_bot_init, on_bot_stop
+
+# bot constants
+from bot.consts import CONVERSATION_TIMEOUT
 
 # bot settings
 from bot.settings import bot_settings
@@ -122,7 +126,18 @@ def build_application() -> Application:
                         ~filters.FORWARDED & ~filters.COMMAND,
                         handle_other_messages,
                     ),
-                ]
+                ],
+                "Q": [
+                    CallbackQueryHandler(
+                        handle_callback_query,
+                    ),
+                ],
+                ConversationHandler.TIMEOUT: [
+                    MessageHandler(
+                        filters.ALL,
+                        handle_timeout,
+                    ),
+                ],
             },
             fallbacks=[
                 CommandHandler(
@@ -133,6 +148,7 @@ def build_application() -> Application:
             per_chat=True,
             persistent=True,
             name="kick_handler",
+            conversation_timeout=CONVERSATION_TIMEOUT,
         ),
     )
 

@@ -8,7 +8,7 @@ from telegram.constants import MessageOriginType
 from telegram.ext import ContextTypes, ConversationHandler
 
 # app editors
-from bot.app.editors import edit_message
+from bot.app.editors import edit_direct_message, edit_message
 
 # app formatters
 from bot.app.formatters import escape_any, generate_report
@@ -131,7 +131,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             "Callback Query: A user [%d] is not a superuser.",
             update.effective_user.id,
         )
-        return
+        return ConversationHandler.END
     answer, chat = query.data.split(":")
     target_chat = int(chat)
     if answer != "y":
@@ -140,7 +140,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         del context.bot_data["kick"][target_chat]
         log.info("Callback Query: Deleted key.")
         await edit_message(update, "Действие отменено\\.")
-        return
+        return ConversationHandler.END
     target = context.bot_data["kick"][target_chat]
     for user in target:
         target[user]["kick"] = True
@@ -148,8 +148,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     if not (success or failure):
         log.info("Callback Query: No one was kicked.")
         await edit_message(update, "Никто не был исключён\\.")
-        return
+        return ConversationHandler.END
     await edit_message(update, await generate_report(success, failure))
+    return ConversationHandler.END
 
 
 async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -176,3 +177,12 @@ async def handle_other_messages(update: Update, context: ContextTypes.DEFAULT_TY
     notify(update, function="handle_other_messages")
     await send_reply(update, "*Перешли* сообщение, не надо отправлять своё\\.")
     return "W"
+
+
+async def handle_timeout(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    notify(update, function="handle_timeout")
+    log.info("Timeout: Conversation ends.")
+    context.bot_data.pop(update.effective_chat.id, None)
+    if query_message := context.chat_data.pop("query", None):
+        await edit_direct_message(query_message, "Превышено время ожидания ответа\\.")
+    return ConversationHandler.END
