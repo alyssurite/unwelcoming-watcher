@@ -1,4 +1,4 @@
-# The Kick Bot
+# The Unwelcoming Watcher
 
 Telegram group bot with no welcoming messages that kicks you.
 

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "thekickbot"
+name = "unwelcoming-watcher"
 version = "0.1.0"
 description = ""
 authors = ["alyssurite <149931727+alyssurite@users.noreply.github.com>"]
