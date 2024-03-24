@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from bot.app.editors import edit_message
 
 # app formatters
-from bot.app.formatters import generate_report
+from bot.app.formatters import escape_any, generate_report
 
 # app helpers
 from bot.app.helpers import add_or_leave_group, add_user_to_kick_dict, notify
@@ -23,13 +23,16 @@ from bot.app.kickers import kick_users
 from bot.app.pyroclient import update_group_info, update_user_info
 
 # app senders
-from bot.app.senders import send_confirmation, send_reply
+from bot.app.senders import send_confirmation, send_reply, send_to_superusers
 
 # bot constants
 from bot.consts import GroupStatus
 
 # database getters
-from bot.db.getters import check_if_superuser
+from bot.db.getters import check_if_fired, check_if_superuser
+
+# database helpers
+from bot.db.helpers import insert_or_update_user
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +43,21 @@ async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_
     status, *_ = await add_or_leave_group(update, context)
     if status >= GroupStatus.RIGHTFUL_ADMIN:
         for user in users:
+            is_fired, date_fired = await check_if_fired(user.id)
+            if is_fired:
+                user = await insert_or_update_user(
+                    user.id, is_fired=False, date_fired=None
+                )
+                await send_to_superusers(
+                    context,
+                    f"Пользователь {escape_any(user.telegram_full_name)} "
+                    f"\\[`{user.id}`\\] был удалён отовсюду "
+                    f"{date_fired.day:02}\\."
+                    f"{date_fired.month:02}\\."
+                    f"{date_fired.year}\\.\n\n"
+                    "Но теперь он [*добавлен снова*]"
+                    f"({update.effective_message.link})\\.",
+                )
             await update_user_info(update.effective_chat.id, user.id)
 
 

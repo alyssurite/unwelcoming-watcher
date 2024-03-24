@@ -9,6 +9,9 @@ from telegram.ext import ContextTypes
 # app formatters
 from bot.app.formatters import generate_confirmation_text
 
+# database getters
+from bot.db.getters import get_superusers
+
 log = logging.getLogger(__name__)
 
 
@@ -21,7 +24,10 @@ async def send_error(update: Update, text: str, **kwargs) -> Message:
 
 
 async def send_confirmation(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, chat_id: int, **kwargs
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    chat_id: int,
+    **kwargs,
 ) -> Message:
     await send_reply(
         update,
@@ -47,3 +53,9 @@ async def send_confirmation(
             ],
         ),
     )
+
+
+async def send_to_superusers(context: ContextTypes.DEFAULT_TYPE, text: str, **kwargs):
+    superusers = await get_superusers()
+    for superuser in superusers:
+        await context.bot.send_message(superuser.id, text)

@@ -27,7 +27,9 @@ async def insert_or_update_user(user_id: int, **kwargs) -> Optional[User]:
 
 
 async def insert_or_update_group_user(
-    group: GroupID, user: UserID, **kwargs
+    group: GroupID,
+    user: UserID,
+    **kwargs,
 ) -> Optional[UserGroupAssociation]:
     if await get_group_user(group, user):
         return await update_group_user(group, user, **kwargs)

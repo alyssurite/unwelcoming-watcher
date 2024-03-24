@@ -7,7 +7,6 @@ from telegram import Update
 from telegram.error import Forbidden
 from telegram.ext import ContextTypes
 
-# pyrogram client
 from bot.app.pyroclient import recheck_rights, update_group_info
 
 # app senders
@@ -17,7 +16,10 @@ from bot.app.senders import send_error
 from bot.consts import GroupStatus
 
 # database getters
-from bot.db.getters import check_group
+from bot.db.getters import check_group, check_if_fired, get_user
+
+# pyrogram client
+from .formatters import escape_any
 
 log = logging.getLogger(__name__)
 
@@ -44,11 +46,23 @@ def notify(update: Update, *, command: str = None, function: str = None):
 
 async def add_user_to_kick_dict(
     context: ContextTypes.DEFAULT_TYPE,
-    group_id: int,
+    chat_id: int,
     user_id: int,
 ):
-    if not (group := context.bot_data["kick"].get(group_id)):
-        group = context.bot_data["kick"][group_id] = {}
+    is_fired, date_fired = await check_if_fired(user_id)
+    if is_fired:
+        user = await get_user(user_id)
+        await context.bot.send_message(
+            chat_id,
+            f"Пользователь {escape_any(user.telegram_full_name)} "
+            f"\\[`{user.id}`\\] уже был удалён отовсюду "
+            f"{date_fired.day:02}\\."
+            f"{date_fired.month:02}\\."
+            f"{date_fired.year}\\.",
+        )
+        return
+    if not (group := context.bot_data["kick"].get(chat_id)):
+        group = context.bot_data["kick"][chat_id] = {}
     group[user_id] = {"kick": False}
 
 

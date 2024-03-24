@@ -2,12 +2,14 @@
 
 import logging
 
+from datetime import date
 from typing import Optional
 
 from sqlalchemy import select
 
 from bot.db import Session
 from bot.db.models import Group, User, UserGroupAssociation
+from bot.db.types import GroupID, UserID
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +49,11 @@ async def get_user(user_id: int) -> Optional[User]:
         return session.get(User, user_id)
 
 
+async def get_superusers() -> list[User]:
+    with Session() as session:
+        return session.scalars(select(User).where(User.is_superuser.is_(True))).all()
+
+
 async def convert_user(user: int | User) -> Optional[User]:
     if isinstance(user, int) and not (user := await get_user(user)):
         log.warning("Convert User: No user supplied.")
@@ -57,6 +64,27 @@ async def check_if_superuser(user_id: int) -> bool:
     if user := await get_user(user_id):
         return user.is_superuser
     return False
+
+
+async def check_if_fired(user_id: int) -> tuple[bool, Optional[date]]:
+    if user := await get_user(user_id):
+        return user.is_fired, user.date_fired
+    return False, None
+
+
+async def check_if_absent(group: GroupID, user: UserID) -> tuple[bool, Optional[date]]:
+    with Session() as session:
+        group, user = await convert_group(group), await convert_user(user)
+        if group and user:
+            return session.scalars(
+                select(
+                    UserGroupAssociation.is_absent, UserGroupAssociation.date_absent
+                ).where(
+                    UserGroupAssociation.user_id == user.id,
+                    UserGroupAssociation.group_id == group.id,
+                )
+            ).one_or_none()
+    return False, None
 
 
 async def get_user_groups(user_id: int) -> list[Group]:
@@ -74,10 +102,7 @@ async def get_users(user_ids: list[int]) -> list[User]:
         return session.scalars(select(User).where(User.id.in_(user_ids))).all()
 
 
-async def get_group_user(
-    group: int | Group,
-    user: int | User,
-) -> Optional[UserGroupAssociation]:
+async def get_group_user(group: GroupID, user: UserID) -> Optional[UserGroupAssociation]:
     with Session() as session:
         group, user = await convert_group(group), await convert_user(user)
         if group and user:
