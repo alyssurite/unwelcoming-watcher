@@ -22,6 +22,9 @@ from bot.app.pyroclient import get_chat_by_username
 # app senders
 from bot.app.senders import send_confirmation, send_error, send_reply
 
+# bot constants
+from bot.consts import ConversationState
+
 # database getters
 from bot.db.getters import get_user, get_user_groups
 
@@ -114,7 +117,7 @@ async def kick_inside_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_args(context, group.id)
     if context.bot_data["kick"].get(group.id):
         context.chat_data["query"] = await send_confirmation(update, context, group.id)
-        return "Q"
+        return ConversationState.KICK_QUERY
     await send_error(update, "Не найден ни один пользователь к исключению\\.")
     return ConversationHandler.END
 
@@ -126,10 +129,10 @@ async def kick_inside_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await process_args(context, chat.id)
     if context.bot_data["kick"].get(chat.id):
         context.chat_data["query"] = await send_confirmation(update, context, chat.id)
-        return "Q"
+        return ConversationState.KICK_QUERY
     context.chat_data["query"] = await send_reply(
         update,
         "Перешли сообщение пользователя для исключения\\.\n"
         "Отправь команду */cancel*, чтобы отменить это действие\\.",
     )
-    return "W"
+    return ConversationState.KICK_WAITING

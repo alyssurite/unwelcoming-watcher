@@ -7,7 +7,13 @@ from datetime import datetime
 # pyrogram
 from pyrogram import Client
 from pyrogram.enums import ChatMemberStatus
-from pyrogram.errors import ChannelInvalid, PeerIdInvalid, UsernameNotOccupied
+from pyrogram.errors import (
+    BadRequest,
+    ChannelInvalid,
+    PeerIdInvalid,
+    UsernameInvalid,
+    UsernameNotOccupied,
+)
 from pyrogram.types import ChatMember
 
 # bot constants
@@ -36,10 +42,23 @@ pyro_app = Client(
 )
 
 
+async def get_user_info(chat_id: int):
+    try:
+        user = await pyro_app.get_users(chat_id)
+    except PeerIdInvalid:
+        log.error("Get User Info: [%s] is not a user.", chat_id)
+        return
+    except BadRequest as e:
+        log.error("Get User Info: Error: %s.", e)
+        return
+    return user
+
+
 async def get_chat_by_username(username: str):
     try:
         chat = await pyro_app.get_chat(username)
-    except UsernameNotOccupied:
+    except (UsernameNotOccupied, UsernameInvalid) as e:
+        log.error("Get Chat By Username: Error: %s.", e)
         return
     return chat
 

@@ -21,6 +21,7 @@ from bot.app.commands import (
     command_cancel,
     command_group,
     command_help,
+    command_info,
     command_kick,
     command_start,
     command_sudo,
@@ -32,6 +33,7 @@ from bot.app.handlers import (
     handle_chat_shared,
     handle_forwarded_message,
     handle_group_message,
+    handle_info_messages,
     handle_left_chat_member,
     handle_new_chat_members,
     handle_other_messages,
@@ -43,7 +45,7 @@ from bot.app.handlers import (
 from bot.app.on_events import on_bot_init, on_bot_stop
 
 # bot constants
-from bot.consts import CONVERSATION_TIMEOUT
+from bot.consts import CONVERSATION_TIMEOUT, ConversationState
 
 # bot settings
 from bot.settings import bot_settings
@@ -88,7 +90,7 @@ def build_application() -> Application:
                 ),
             ],
             states={
-                "X": [
+                ConversationState.GROUP_WAITING: [
                     MessageHandler(
                         filters.StatusUpdate.CHAT_SHARED,
                         handle_chat_shared,
@@ -117,7 +119,7 @@ def build_application() -> Application:
                 ),
             ],
             states={
-                "W": [
+                ConversationState.KICK_WAITING: [
                     MessageHandler(
                         filters.FORWARDED,
                         handle_forwarded_message,
@@ -127,7 +129,7 @@ def build_application() -> Application:
                         handle_other_messages,
                     ),
                 ],
-                "Q": [
+                ConversationState.KICK_QUERY: [
                     CallbackQueryHandler(
                         handle_callback_query,
                     ),
@@ -149,6 +151,35 @@ def build_application() -> Application:
             persistent=True,
             name="kick_handler",
             conversation_timeout=CONVERSATION_TIMEOUT,
+        ),
+    )
+
+    # ask for info about user command
+    application.add_handler(
+        ConversationHandler(
+            entry_points=[
+                CommandHandler(
+                    "info",
+                    command_info,
+                ),
+            ],
+            states={
+                ConversationState.INFO_WAITING: [
+                    MessageHandler(
+                        ~filters.COMMAND,
+                        handle_info_messages,
+                    ),
+                ],
+            },
+            fallbacks=[
+                CommandHandler(
+                    "cancel",
+                    command_cancel,
+                ),
+            ],
+            per_chat=True,
+            persistent=True,
+            name="info_handler",
         ),
     )
 

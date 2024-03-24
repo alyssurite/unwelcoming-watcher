@@ -21,6 +21,9 @@ from bot.app.formatters import escape_any, escape_id
 # app helpers
 from bot.app.helpers import notify
 
+# app informators
+from bot.app.informators import info_inside_chat, info_inside_group
+
 # app kickers
 from bot.app.kickers import kick_inside_chat, kick_inside_group
 
@@ -31,7 +34,7 @@ from bot.app.pyroclient import update_group_info, update_user_info
 from bot.app.senders import send_error, send_reply
 
 # bot constants
-from bot.consts import REQUEST_CHAT
+from bot.consts import REQUEST_CHAT, ConversationState
 
 # database getters
 from bot.db.getters import check_if_superuser, get_user
@@ -81,6 +84,18 @@ async def command_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 
+async def command_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Shows help messages."""
+    notify(update, command="/info")
+    await update_user_info(update.effective_user.id)
+    if not await check_if_superuser(update.effective_user.id):
+        await send_error(update, "Нет прав на эту команду\\.")
+        return
+    if update.effective_chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
+        return await info_inside_group(update, context)
+    return await info_inside_chat(update, context)
+
+
 async def command_kick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Kick member from all groups."""
     notify(update, command="/kick")
@@ -118,7 +133,7 @@ async def command_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             resize_keyboard=True,
         ),
     )
-    return "X"
+    return ConversationState.GROUP_WAITING
 
 
 async def command_sudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -23,10 +23,16 @@ from bot.app.kickers import kick_users
 from bot.app.pyroclient import update_group_info, update_member_info
 
 # app senders
-from bot.app.senders import send_confirmation, send_reply, send_to_superusers
+from bot.app.senders import (
+    send_confirmation,
+    send_error,
+    send_info,
+    send_reply,
+    send_to_superusers,
+)
 
 # bot constants
-from bot.consts import GroupStatus
+from bot.consts import ConversationState, GroupStatus
 
 # database getters
 from bot.db.getters import check_if_fired, check_if_superuser, get_group
@@ -159,24 +165,48 @@ async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT
     forwarded = update.effective_message.forward_origin
     if forwarded.type not in (MessageOriginType.USER, MessageOriginType.HIDDEN_USER):
         await send_reply(update, "Сообщение не от пользователя\\!")
-        return "W"
+        return ConversationState.KICK_WAITING
     if forwarded.type == MessageOriginType.HIDDEN_USER:
         await send_reply(
             update,
             "К сожалению, данный пользователь скрывает свой профиль\\. "
-            "Попробуйте удалить его другим способом\\.",
+            "Попробуйте исключить его другим способом\\.",
         )
-        return "W"
+        return ConversationState.KICK_WAITING
     await add_user_to_kick_dict(context, chat.id, forwarded.sender_user.id)
     if context.bot_data["kick"].get(chat.id):
         await send_confirmation(update, context, chat.id)
     return ConversationHandler.END
 
 
+async def handle_info_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    notify(update, function="handle_info_messages")
+    chat = update.effective_chat
+    if forwarded := update.effective_message.forward_origin:
+        if forwarded.type not in (MessageOriginType.USER, MessageOriginType.HIDDEN_USER):
+            await send_reply(update, "Сообщение не от пользователя\\!")
+            return ConversationState.INFO_WAITING
+        if forwarded.type == MessageOriginType.HIDDEN_USER:
+            await send_reply(
+                update,
+                "К сожалению, данный пользователь скрывает свой профиль\\. "
+                "Попробуйте поделиться им другим способом\\.",
+            )
+            return ConversationState.INFO_WAITING
+        user = forwarded.sender_user
+    else:
+        user = update.effective_message.from_user
+    if not user:
+        await send_error(update, "Не найден подходящий пользователь\\.")
+    else:
+        await send_info(context, chat.id, user.id)
+    return ConversationHandler.END
+
+
 async def handle_other_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notify(update, function="handle_other_messages")
     await send_reply(update, "*Перешли* сообщение, не надо отправлять своё\\.")
-    return "W"
+    return ConversationState.KICK_WAITING
 
 
 async def handle_timeout(update: Update, context: ContextTypes.DEFAULT_TYPE):

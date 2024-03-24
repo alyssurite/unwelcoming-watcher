@@ -35,6 +35,14 @@ class GroupStatus(Enum):
 CONVERSATION_TIMEOUT = 60
 
 
+# conversation states
+class ConversationState(Enum):
+    GROUP_WAITING = auto()
+    KICK_WAITING = auto()
+    KICK_QUERY = auto()
+    INFO_WAITING = auto()
+
+
 PRIVILEGES = (
     "can_change_info",
     "can_delete_messages",
