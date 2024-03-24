@@ -37,6 +37,13 @@ from bot.db.helpers import insert_or_update_user
 log = logging.getLogger(__name__)
 
 
+async def handle_status_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    notify(update, function="handle_status_update")
+    chat_id = update.effective_chat.id
+    _, *admin_rights = await add_or_leave_group(update, context)
+    await update_group_info(chat_id, *admin_rights)
+
+
 async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notify(update, function="handle_new_chat_members")
     users = update.message.new_chat_members
@@ -95,6 +102,7 @@ async def handle_chat_shared(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    notify(update, function="handle_callback_query")
     query = update.callback_query
     await query.answer(query.data, show_alert=True)
     log.info(
@@ -133,6 +141,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    notify(update, function="handle_forwarded_message")
     chat = update.effective_chat
     forwarded = update.effective_message.forward_origin
     if forwarded.type not in (MessageOriginType.USER, MessageOriginType.HIDDEN_USER):
@@ -152,5 +161,6 @@ async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT
 
 
 async def handle_other_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    notify(update, function="handle_other_messages")
     await send_reply(update, "*Перешли* сообщение, не надо отправлять своё\\.")
     return "W"

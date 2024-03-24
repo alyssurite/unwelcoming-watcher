@@ -34,6 +34,7 @@ from bot.app.handlers import (
     handle_left_chat_member,
     handle_new_chat_members,
     handle_other_messages,
+    handle_status_update,
 )
 
 # bot events
@@ -160,6 +161,14 @@ def build_application() -> Application:
     application.add_handler(
         CallbackQueryHandler(
             handle_callback_query,
+        ),
+    )
+
+    # catch any status update
+    application.add_handler(
+        MessageHandler(
+            filters.ChatType.GROUPS & filters.StatusUpdate.ALL,
+            handle_status_update,
         ),
     )
 
