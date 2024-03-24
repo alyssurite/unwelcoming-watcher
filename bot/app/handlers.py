@@ -4,13 +4,14 @@ import logging
 
 # python-telegram-bot
 from telegram import ReplyKeyboardRemove, Update
-from telegram.ext import ContextTypes
+from telegram.constants import MessageOriginType
+from telegram.ext import ContextTypes, ConversationHandler
 
 # app editors
 from bot.app.editors import edit_message
 
 # app helpers
-from bot.app.helpers import add_or_leave_group, notify
+from bot.app.helpers import add_or_leave_group, add_user_to_kick_dict, notify
 
 # bot kickers
 from bot.app.kickers import kick_users
@@ -19,7 +20,7 @@ from bot.app.kickers import kick_users
 from bot.app.pyroclient import update_group_info, update_user_info
 
 # app senders
-from bot.app.senders import send_reply
+from bot.app.senders import send_confirmation, send_reply
 
 # bot constants
 from bot.consts import GroupStatus
@@ -112,3 +113,27 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await edit_message(update, "Никто не был исключён\\.")
         return
     await edit_message(update, await generate_report(success, failure))
+
+
+async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    forwarded = update.effective_message.forward_origin
+    if forwarded.type not in (MessageOriginType.USER, MessageOriginType.HIDDEN_USER):
+        await send_reply(update, "Сообщение не от пользователя\\!")
+        return "W"
+    if forwarded.type == MessageOriginType.HIDDEN_USER:
+        await send_reply(
+            update,
+            "К сожалению, данный пользователь скрывает свой профиль\\. "
+            "Попробуйте удалить его другим способом\\.",
+        )
+        return "W"
+    await add_user_to_kick_dict(context, chat.id, forwarded.sender_user.id)
+    if context.bot_data["kick"].get(chat.id):
+        await send_confirmation(update, chat)
+    return ConversationHandler.END
+
+
+async def handle_other_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await send_reply(update, "*Перешли* сообщение, не надо отправлять своё\\.")
+    return "W"

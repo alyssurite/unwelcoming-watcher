@@ -12,7 +12,7 @@ from telegram import (
     Update,
 )
 from telegram.constants import ChatType
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 
 # app helpers
 from bot.app.helpers import escape_any, escape_id, notify
@@ -30,7 +30,7 @@ from bot.app.senders import send_error, send_reply
 from bot.consts import REQUEST_CHAT
 
 # database getters
-from bot.db.getters import get_user
+from bot.db.getters import check_if_superuser, get_user
 
 # database helpers
 from bot.db.helpers import grant_user_superuser
@@ -74,16 +74,12 @@ async def command_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def command_kick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Kick member from all groups."""
     notify(update, command="/kick")
+    if not await check_if_superuser(update.effective_user.id):
+        await send_error(update, "Нет прав на эту команду\\.")
     context.bot_data.setdefault("kick", {})
     if update.effective_chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
-        where, kicker = "в группе", kick_inside_group
-    else:
-        where, kicker = "в чате", kick_inside_chat
-    await send_reply(
-        update,
-        f"Вызвана команда /kick {where} \\[{escape_id(update.effective_chat.id)}\\]\\.",
-    )
-    await kicker(update, context)
+        return await kick_inside_group(update, context)
+    return await kick_inside_chat(update, context)
 
 
 async def command_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -133,3 +129,9 @@ async def command_sudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             f"Пользователь *{escape_any(user.telegram_full_name)}* \\[`{user.id}`\\] "
             "теперь администратор бота\\.",
         )
+
+
+async def command_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Cancel some action."""
+    await send_reply(update, "Действие отменено\\.")
+    return ConversationHandler.END

@@ -53,6 +53,16 @@ def notify(update: Update, *, command: str = None, function: str = None):
         )
 
 
+async def add_user_to_kick_dict(
+    context: ContextTypes.DEFAULT_TYPE,
+    group_id: int,
+    user_id: int,
+):
+    if not (group := context.bot_data["kick"].get(group_id)):
+        group = context.bot_data["kick"][group_id] = {}
+    group[user_id] = {"kick": False}
+
+
 async def leave_chat(update: Update, context: ContextTypes.DEFAULT_TYPE, chat_id: int):
     notify(update, function="leave_chat")
     try:

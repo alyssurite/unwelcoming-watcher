@@ -9,6 +9,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
     CommandHandler,
+    ConversationHandler,
     Defaults,
     MessageHandler,
     PicklePersistence,
@@ -17,6 +18,7 @@ from telegram.ext import (
 
 # bot commands
 from bot.app.commands import (
+    command_cancel,
     command_group,
     command_help,
     command_kick,
@@ -28,8 +30,10 @@ from bot.app.commands import (
 from bot.app.handlers import (
     handle_callback_query,
     handle_chat_shared,
+    handle_forwarded_message,
     handle_left_chat_member,
     handle_new_chat_members,
+    handle_other_messages,
 )
 
 # bot events
@@ -89,9 +93,34 @@ def build_application() -> Application:
 
     # kick from all groups
     application.add_handler(
-        CommandHandler(
-            "kick",
-            command_kick,
+        ConversationHandler(
+            entry_points=[
+                CommandHandler(
+                    "kick",
+                    command_kick,
+                ),
+            ],
+            states={
+                "W": [
+                    MessageHandler(
+                        filters.FORWARDED,
+                        handle_forwarded_message,
+                    ),
+                    MessageHandler(
+                        ~filters.FORWARDED & ~filters.COMMAND,
+                        handle_other_messages,
+                    ),
+                ]
+            },
+            fallbacks=[
+                CommandHandler(
+                    "cancel",
+                    command_cancel,
+                ),
+            ],
+            per_chat=True,
+            persistent=True,
+            name="kick_handler",
         ),
     )
 
